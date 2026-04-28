@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Manager</title>
+</head>
+<body>
+    <h1>Plant Manager - Inicio.v1</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        Planta: <input id="archivo" name="imagen" type="file">
+        <button type="submit">SUBIR IMAGEN</button>
+    </form>
+</form>
+</body>
+<script>
+    function subir(){
+        file=document.getElementById("file")
+        console.log("File: ",file)
+    }
+</script>
+</html>
