@@ -10,7 +10,7 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload():
     
-    UPLOAD_FOLDER = "uploads"
+    UPLOAD_FOLDER = "static/uploads"
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     
     archivo = request.files["imagen"]
