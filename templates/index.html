@@ -8,7 +8,14 @@
 <body>
     <h1>Plant Manager - Inicio.v1</h1>
     <form action="/upload" method="POST" enctype="multipart/form-data">
-        Planta: <input id="archivo" name="imagen" type="file">
+        Planta:
+        <input id="archivo" name="imagen" type="file">
+        Tipo de planta:
+        <select name="organ">
+            <option value="auto">Automatico</option>
+            <option value="leaf">Hoja</option>                
+            <option value="flower">Flor</option>
+        </select>
         <button type="submit">SUBIR IMAGEN</button>
     </form>
 </form>
