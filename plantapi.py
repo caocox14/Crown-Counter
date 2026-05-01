@@ -1,6 +1,7 @@
 import json, requests
 
 def identificar_planta(url,imagen,organ,project):
+    print("identificar")
     API_KEY = "2b10hm5QUfNvomgsqb6c5F2we"
     PROJECT = project; # You can choose a more specific flora, see: /docs/newfloras
     api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
@@ -14,19 +15,18 @@ def identificar_planta(url,imagen,organ,project):
         ('images', (image_path, image)),
     ]
 
-    req = requests.Request('POST', url=api_endpoint, files=files, data=data)
-    prepared = req.prepare()
-    s = requests.Session()
-    response = s.send(prepared)
-    json_result = json.loads(response.text)
+    response = requests.post(api_endpoint, files=files, data=data)
+    resultado = response.json()
+    data=""
+    print("verr", response.status_code)
+    if resultado.get("results") and response.status_code != 404:
+        planta = resultado["results"][0]
 
-    if(response.status_code==200):
-        print("Busqueda exitosa!")
-        planta = json_result["results"][0]
         nombre = planta["species"]["scientificNameWithoutAuthor"]
-        confianza = planta["score"]
-        data={"planta": nombre,"confianza":confianza,"estado":True}
-        return data
+        alias = planta["species"]["commonNames"]
+        certeza = planta["score"]
+        
+        data={"nombre": nombre,"certeza": certeza,"alias":alias}
     else:
-        data={"response":response.status_code,"estado":False}
-        return data
+        data={"nombre": "Indeterminado","certeza":0.0,"alias":"Ninguno"}
+    return data
