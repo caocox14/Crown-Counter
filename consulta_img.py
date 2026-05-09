@@ -1,24 +1,32 @@
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException as ex1
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options #cambiar aqui por el navegador a utilizar ej:
+# from selenium.webdriver.chrome.options import Options
 
-def obtener_imagen_inaturalist(nombre):
-    url = "https://api.inaturalist.org/v1/taxa"
+def obtener_imagen(plantas):#esta funcion se encarga de buscar la imagen relacionada a la planta que se identifico, para que asi el usuario pueda compararla visualmente y asegurarse
+    options = Options()
+    options.add_argument("--headless")  # 👈 clave, si es clave
 
-    params = {
-        "q": nombre,
-        "limit": 1
-    }
+    driver = webdriver.Firefox(options=options) #cambiar aqui por el navegar que se utilize prereriblemente chrome - esta probado que con firefoz funciona
+    #driver = webdriver.Chrome(options=options)
+    src=["https://png.pngtree.com/png-clipart/20230405/original/pngtree-question-mark-icon-png-image_9025635.png"]
+    
+    for planta in plantas:#busqueda de los y nombre cientifico
+        nombre = planta.replace(" ", "_")
+        nombre=nombre[0].upper()+nombre[1:len(nombre)]
+        url = f"https://www.picturethisai.com/es/wiki/{nombre}.html"#la imagen se extrae de esta pagina
+        print("Buscando imagen para la planta: ",planta)
+        try:
+            driver.get(url)
+            img = driver.find_element(By.CLASS_NAME, "description-main-image")
+            src.append(img.get_attribute("src"))
+        except ex1 as e:
+            print("No se encontró la imagen para la planta: ",planta, ": ",e.msg)
+            pass
+    driver.quit()
+    if 1<len(src):#en caso que no se encuentre la imagen se muestra un indicador que haga referencia
+        return src[1]#primera imagen que se encontro
+    return src[0]
 
-    response = requests.get(url)
-    data = response.json()
 
-    if data["results"]:
-        taxon = data["results"][0]
-        return taxon.get("default_photo", {}).get("medium_url")
-
-    return None
-def obtener_mimagenes(alias):
-    resultado =[]
-    for al in alias:
-        resultado.append(obtener_imagen_inaturalist(al))
-    return resultado[0]

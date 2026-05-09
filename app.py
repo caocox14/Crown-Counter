@@ -1,7 +1,6 @@
 from flask import Flask, render_template,request
 from plantapi import identificar_planta as ip
 from werkzeug.utils import secure_filename
-from consulta_img import obtener_mimagenes as om
 import uuid
 import os
 
@@ -16,11 +15,11 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload():
     
-    UPLOAD_FOLDER = "static/uploads/"
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    UPLOAD_FOLDER = "static/uploads/"#Folder de subida
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)#confirmacion 
     
-    archivo = request.files["imagen"]
-    organ=request.form["organ"]
+    archivo = request.files["imagen"]#obtener imagen del campo del formulario "imagen"
+    organ=request.form["organ"]#obtener 
     
     nombre_original = secure_filename(archivo.filename)
     _, extension = os.path.splitext(nombre_original)
@@ -33,13 +32,15 @@ def upload():
     )
 
     archivo.save(ruta_imagen)
+    print("archivo de entrada: ",nombre_original)
     data=ip(UPLOAD_FOLDER,nuevo_nombre + extension,organ,"all")
-    if (data["nombre"]=="indeterminado"):
-        return render_template('indeterminado.html')
     
-    data["img"]=om(data["alias"])
     return render_template('planta.html',data=data)
     
+@app.route('/direccion/<campo_dinamico>/<int:numero>')
+def direccion(campo_dinamico):
+    data=campo_dinamico
+    return render_template("html.html",data=data)
 
 @app.errorhandler(413)
 def archivo_muy_grande(e):
