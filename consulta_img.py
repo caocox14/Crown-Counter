@@ -28,3 +28,5 @@ def obtener_imagen(plantas):#esta funcion se encarga de buscar la imagen relacio
     if 1<len(src):#en caso que no se encuentre la imagen se muestra un indicador que haga referencia
         return src[1]#primera imagen que se encontro
     return src[0]
+
+
