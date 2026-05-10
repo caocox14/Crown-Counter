@@ -6,8 +6,17 @@
     <title>Plant Manager</title>
 </head>
 <body>
-    <h1>Nombre: {{data.nombre}} - ({{data.alias}})</h1>
-    <p>Certeza: {{data.certeza}}</p>
-    <img src="{{data.img}}" alt="Imagen de la planta" width="300px">
+    <form action="/localizar" method="POST" enctype="multipart/form-data">
+        <h1>Nombre: {{data.nombre}} - ({{data.alias}})</h1>
+        <p>Certeza: {{data.certeza}}</p>
+        <img src="{{data.img}}" alt="Imagen de la planta" width="300px">
+        <button type="submit">Enviar Info de riego</button>
+    </form>
+    <button onclick="volver()">Intentar nuevamente</button>
 </body>
+<script>
+    function volver() {
+        window.location.href = "/";
+    }
+</script>
 </html>

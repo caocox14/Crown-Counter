@@ -1,67 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-<style>
-    body {
-            font-family: Arial, sans-serif;
-            background: #f4f7f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 350px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-
-        input{
-            width: 90%;
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        select, button {
-            width: 100%;
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            background: #2ecc71;
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            background: #27ae60;
-        }
-
-        .preview {
-            margin-top: 15px;
-        }
-
-        .preview img {
-            max-width: 100%;
-            border-radius: 10px;
-            display: none;
-        }
-</style>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -72,7 +10,7 @@
 <body>
 
 <div class="container">
-    <h1>Plant Manager</h1>
+    <h1>Detección</h1>
 
     <form action="/upload" method="POST" enctype="multipart/form-data">
         
@@ -82,7 +20,6 @@
         <div class="preview">
             <img id="previewImg">
         </div>
-        <p id="error" style="color:red; display:none;"></p>
         <label>Tipo de planta:</label>
         <select name="organ">
             <option value="auto">Automático</option>
@@ -95,50 +32,6 @@
 </div>
 
 <script>
-    const inputFile = document.getElementById("archivo");
-    const previewImg = document.getElementById("previewImg");
-    const errorMsg = document.getElementById("error");
-    const form = document.querySelector("form");
-
-    let archivoValido = false;
-
-    inputFile.addEventListener("change", function() {
-        const file = this.files[0];
-        errorMsg.style.display = "none";
-        previewImg.style.display = "none";
-        archivoValido = false;
-
-        if (file) {
-            const nombre = file.name.toLowerCase();
-
-            if (!nombre.endsWith(".jpg") && 
-                !nombre.endsWith(".jpeg") && 
-                !nombre.endsWith(".png")) {
-
-                errorMsg.textContent = "Solo se permiten archivos JPG o PNG";
-                errorMsg.style.display = "block";
-                inputFile.value = ""; // limpia el input
-                return;
-            }
-
-            archivoValido = true;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                previewImg.style.display = "block";
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    form.addEventListener("submit", function(e) {
-        if (!archivoValido) {
-            e.preventDefault();
-            errorMsg.textContent = "Debes seleccionar una imagen válida (JPG o PNG)";
-            errorMsg.style.display = "block";
-        }
-    });
 
 </script>
 
