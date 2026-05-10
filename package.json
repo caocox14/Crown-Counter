@@ -1,0 +1,26 @@
+{
+  "name": "sre-1",
+  "version": "1.0.0",
+  "description": "Requerimientos para correr proyecto\r 1.Instalar python\r 2.Instalar virtualenv (pip install virtualenv)\r 3. crear un entorno virtual en la carpeta de proyecto (python -m venv env)\r 4. prender el entorno virtual (source env/bin/activate)\r 5.Instalar las bibliotecas necesarias (pip install -r requirements.txt)\r 6. ejecutar el archivo app.py (python app.py)\r -----En caso de descargar alguna libreria, por favor actualizar el archivo de requerimientos------",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jorehash/SRE-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jorehash/SRE-1/issues"
+  },
+  "homepage": "https://github.com/jorehash/SRE-1#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^3.4.17"
+  }
+}

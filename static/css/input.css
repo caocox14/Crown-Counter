@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+@layer components {
+    /* Fondo principal con degradado para legibilidad */
+    .main-bg {
+        background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('../img/background.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+
+    /* Contenedor efecto vidrio */
+    .glass-card {
+        /* En móvil ocupa todo el ancho sin redondear, en PC vuelve a ser una tarjeta */
+        @apply bg-white/85 backdrop-blur-xl border-white/30 flex flex-col md:flex-row md:rounded-[3rem] md:shadow-2xl;
+        min-height: 100vh;
+        width: 100%;
+    }
+
+    /* Scrollbar personalizada para el panel interno (Responsividad 1366x768) */
+    .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+        @apply bg-green-600/20 rounded-full;
+    }
+
+    /* Área de contenido scrolleable */
+    .content-area {
+        /* Asegura que el contenido no se corte en móviles */
+        @apply flex-1 flex flex-col overflow-y-auto bg-white/40 h-full pb-20 md:pb-0;
+    }
+
+    /* Tarjetas de estado */
+    .stat-card {
+        @apply bg-white p-6 rounded-[2.5rem] shadow-lg border border-gray-100 flex items-center gap-4 transition-all min-h-[110px];
+    }
+
+    /* Contenedores de iconos */
+    .icon-container-blue, .icon-container-green, .icon-container-orange {
+        @apply w-16 h-16 rounded-2xl text-3xl flex items-center justify-center flex-shrink-0;
+    }
+
+    .icon-container-blue { @apply bg-blue-50; }
+    .icon-container-green { @apply bg-green-50; }
+    .icon-container-orange { @apply bg-orange-50; }
+
+    /* Botón principal */
+    .btn-primary {
+        @apply bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-all;
+    }
+
+    /* Zona de carga de archivos */
+    .drop-zone {
+        @apply hover:bg-green-50 transition-colors cursor-pointer border-2 border-dashed border-green-200 rounded-3xl p-12 flex flex-col items-center justify-center relative;
+    }
+
+    /* Filtro para iconos del sidebar */
+    .nav-icon {
+        filter: brightness(0) invert(1);
+        @apply opacity-90;
+    }
+}

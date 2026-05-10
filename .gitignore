@@ -5,5 +5,5 @@ __pycache__/
 instance/
 static/uploads/
 *.db
-
+node_modules/
 
