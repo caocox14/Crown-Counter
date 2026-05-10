@@ -1,6 +1,7 @@
 from flask import Flask, render_template,request
 from plantapi import identificar_planta as api
 from consulta_img import obtener_imagen as buscar_img
+from conexion_base import inicializar_base as comprobar
 from werkzeug.utils import secure_filename
 import psycopg2
 import uuid
@@ -9,6 +10,8 @@ import os
 app = Flask(__name__)
 
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
+    
+comprobar()
 
 # conexión a PostgreSQL
 try:
@@ -62,6 +65,7 @@ def upload():
             
             aliases= str(consulta["alias"]).replace("'", " ")# Escapar comillas simples'
             consulta["alias"]=aliases[1:len(aliases)-1]
+
             sql="INSERT INTO plantas (nombre_cientifico, nombres_comunes,humedad,temperatura,imagen) VALUES (%s, %s,0,0,%s);";
             values=(consulta["nombre"],consulta["alias"],consulta["img"])
             cursor.execute(sql,values)

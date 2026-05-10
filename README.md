@@ -10,3 +10,5 @@ Requerimientos para correr proyecto
 -----El aplicativo se actualizo para realizar busqueda de imagenes en linea
 para evitar problemas es preferible realizar unos cambios en el archivo consulta_img (los cuales se indican en el mismo)
 no son muchos y consiste en cambiar el buscador por defecto al que se use localmente.
+
+---Se creo un archivo para replicar la base de datos, de postgre, se ejecuta automaticamente al iniciar app.py
