@@ -12,3 +12,5 @@ para evitar problemas es preferible realizar unos cambios en el archivo consulta
 no son muchos y consiste en cambiar el buscador por defecto al que se use localmente.
 
 ---Se creo un archivo para replicar la base de datos, de postgre, se ejecuta automaticamente al iniciar app.py
+
+----- Se requiere instalar NODE.JS para instalar poder correr Tailwind CSS
