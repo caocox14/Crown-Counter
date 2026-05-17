@@ -67,11 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (formIA && btnAnalizar) {
-    formIA.addEventListener('submit', () => {
+
+    formIA.addEventListener('submit', async (e) => {
         btnAnalizar.disabled = true;
         // Mantenemos la altura para evitar que la página se mueva
         btnAnalizar.style.height = `${btnAnalizar.offsetHeight}px`; 
-        
         btnAnalizar.innerHTML = `
             <div class="flex items-center justify-center gap-3">
                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </svg>
                 <span class="text-sm">Analizando...</span>
             </div>`;
+        await analizarimagen(e);
     });
 }
 
@@ -156,3 +157,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(fetchSensorData, 10000);
 });
+async function analizarimagen(e){
+    e.preventDefault();
+        const form = e.target;
+        // Obtiene todos los datos del formulario
+        const formData = new FormData(form);
+        try {
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+            // Si Flask devuelve texto HTML
+            const resultado = await response.text();
+            // Inserta el resultado en la página
+            //document.getElementById("resultado").innerHTML = resultado;
+            console.log("Respuesta del servidor2:", resultado);
+        } catch (error) {
+            console.error(error);
+        }
+}

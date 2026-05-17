@@ -36,25 +36,25 @@ def index():
 
 @app.route("/upload", methods=["POST"])
 def upload():
+
+    imagenes = request.files.getlist("imagen")#obtener imagen del forumulario
+    imagenes_n=[]
     
-    UPLOAD_FOLDER = "static/uploads/"#Folder de subida
+    for imagen in imagenes:
+        print(imagen.filename)
+        _, extension = os.path.splitext(secure_filename(imagen.filename))
+        ruta_imagen = f"static/uploads/{str(uuid.uuid4())+extension}"
+        imagen.save(ruta_imagen)
+        imagenes_n.append(ruta_imagen)
     
-    archivo = request.files["imagen"]#obtener imagen del campo del formulario "imagen"
-    organ=request.form["organ"]#obtener 
+    consulta=api(imagenes_n,"auto","all")
+    for imagenes in imagenes_n:
+        os.remove(imagenes)
+    return (procesar_peticion(consulta))
+    # return render_template('planta.html',data=procesar_peticion(consulta))
     
-    #obtener extensiòn del archivo, para el cambio de nombre
-    _, extension = os.path.splitext(secure_filename(archivo.filename))
-
-    nuevo_nombre = str(uuid.uuid4())+extension  # nombre nuevo - no repetido
-
-    ruta_imagen = os.path.join(
-        UPLOAD_FOLDER,
-        nuevo_nombre
-    )
-    archivo.save(ruta_imagen)
-
-    consulta=api(UPLOAD_FOLDER,nuevo_nombre,organ,"all")
-
+def procesar_peticion(consulta):
+    
     if(consulta["nombre"]!="Indeterminado"):#subir info de la planta en caso de que no exista en db
         print("consulta",consulta["nombre"])
         cursor.execute("SELECT * FROM plantas WHERE nombre_cientifico = %s;",(consulta["nombre"],))
@@ -71,13 +71,16 @@ def upload():
             cursor.execute(sql,values)
             conexion.commit()
         else:
+            print("todos los registros",respuesta[0][3],len(respuesta[0][3]))
             consulta["img"]= respuesta[0][3]
             consulta["humedad"]=respuesta[0][4]
             consulta["temperatura"]=respuesta[0][5]
-         
-    os.remove(ruta_imagen)
-    return render_template('planta.html',data=consulta)
+
+        if(consulta["img"]==''):
+            print("imagen vacia")
+            consulta["img"]='https://png.pngtree.com/png-clipart/20230405/original/pngtree-question-mark-icon-png-image_9025635.png'     
     
+    return consulta
 # @app.route('/direccion/<campo_dinamico>/<int:numero>')
 # def direccion(campo_dinamico):
 #     data=campo_dinamico

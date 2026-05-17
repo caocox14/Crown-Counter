@@ -102,13 +102,14 @@
                                 <!-- Añadí la clase "prompt-text" al contenedor del icono y texto -->
                                 <div class="prompt-text text-center p-4">
                                     <span class="text-4xl mb-3 block transform group-hover:scale-110 transition-transform">☁️</span>
-                                    <p class="text-gray-500 text-xs md:text-sm font-medium">Selecciona o arrastra la foto</p>
+                                    <p class="text-gray-500 text-xs md:text-sm font-medium">Selecciona o arrasta una o varias fotos. Maximo 3</p>
                                     <p class="text-gray-300 text-[10px] mt-1">PNG, JPG hasta 20MB</p>
                                 </div>
 
                                 <!-- Añadí id="file-input" -->
-                                <input type="file" name="imagen" id="file-input" class="absolute inset-0 opacity-0 cursor-pointer z-10" required>
-                                <input type="hidden" name="organ" value="leaf">
+                                <input type="file" name="imagen" id="file-input" 
+                                    class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                    accept=".png,.jpg,.jpeg" multiple required>
                             </div>
 
                             <!-- Añadí id="btn-analizar" -->
@@ -209,5 +210,37 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        <!-- detectar la cantidad de archivos en el input file  -->
+        const input = document.getElementById("file-input");
+            input.addEventListener("change", () => {
+                const archivos = input.files;
+                if (archivos.length > 3) {
+                    alert("Solo puedes subir máximo 3 imágenes");
+                    input.value = "";
+                }
+            });
+        // document.getElementById("upload-form").addEventListener("submit", async function(e) {
+        //     console.log("Formulario enviado");
+        //     // Evita que el navegador vaya a /upload
+        //     e.preventDefault();
+        //     const form = e.target;
+        //     // Obtiene todos los datos del formulario
+        //     const formData = new FormData(form);
+        //     try {
+        //         const response = await fetch("/upload", {
+        //             method: "POST",
+        //             body: formData
+        //         });
+        //         // Si Flask devuelve texto HTML
+        //         const resultado = await response.text();
+        //         // Inserta el resultado en la página
+        //         //document.getElementById("resultado").innerHTML = resultado;
+        //         console.log("Respuesta del servidor:", resultado);
+        //     } catch (error) {
+        //         console.error(error);
+        //     }
+        // });
+    </script>
 </body>
 </html>
