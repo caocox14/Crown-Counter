@@ -11,8 +11,7 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 
 @app.route('/')
 def index():
-    # ⚡ ¡Ahora carga al instante! Eliminamos verificar_tabla() de aquí
-    # para que Vercel entregue el HTML en milisegundos sin consultar la DB.
+    # ⚡ Carga al instante: Sin consultas pesadas a la DB en la raíz
     return render_template('index.html')
 
 @app.route("/upload", methods=["POST"])
@@ -59,21 +58,24 @@ def procesar_peticion(consulta):
         try:
             cursor = conexion.cursor()
             
+            # Consultamos si la planta ya existe en nuestra base de datos local
             cursor.execute("SELECT imagen, humedad, temperatura FROM public.plantas WHERE nombre_cientifico = %s;", (consulta["nombre"],))
             respuesta = cursor.fetchall()
             
             if len(respuesta) == 0:
-                print(f"Planta nueva detectada: {consulta['nombre']}. Buscando imagen...")
+                print(f"Planta nueva detectada: {consulta['nombre']}. Iniciando búsqueda externa...")
                 terminos_busqueda = [consulta["nombre"]]
                 if consulta["alias"] != "Ninguno":
                     terminos_busqueda.append(consulta["alias"])
                 
+                # ⚡ Ejecutamos el raspado con el nuevo timeout veloz de 1.5s
                 try:
                     consulta["img"] = buscar_img(terminos_busqueda)
                 except Exception as err_img:
                     print("Error al buscar imagen en la web:", err_img)
                     consulta["img"] = ""
                     
+                # Insertamos los nuevos registros de forma limpia
                 try:
                     sql = "INSERT INTO public.plantas (nombre_cientifico, nombres_comunes, humedad, temperatura, imagen) VALUES (%s, %s, 0, 0, %s);"
                     values = (consulta["nombre"], consulta["alias"], consulta["img"])
@@ -84,7 +86,7 @@ def procesar_peticion(consulta):
                     conexion.rollback()
                     print("Error al insertar en Supabase, haciendo rollback:", err_db)
             else:
-                print("Planta encontrada en Supabase. Recuperando registros...")
+                print("Planta encontrada en Supabase. Recuperando registros instantáneamente...")
                 consulta["img"] = respuesta[0][0]          
                 consulta["humedad"] = respuesta[0][1]      
                 consulta["temperatura"] = respuesta[0][2]  
@@ -95,6 +97,7 @@ def procesar_peticion(consulta):
         finally:
             conexion.close()
 
+    # Si no se encontró imagen por ningún lado, asignamos la de respaldo por defecto
     if not consulta.get("img") or consulta["img"] == '':
         consulta["img"] = 'https://png.pngtree.com/png-clipart/20230405/original/pngtree-question-mark-icon-png-image_9025635.png'
         
