@@ -1,0 +1,74 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    ✅ FIX #2: PROBLEMA CON TEMPLATES                        ║
+║                     (Página en blanco en Vercel)                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🔍 PROBLEMA IDENTIFICADO:
+──────────────────────────
+❌ Vercel no estaba sirviendo los archivos HTML/CSS/JS
+❌ Página en blanco porque no encontraba el template 'index.html'
+❌ vercel.json tenía configuración incompleta
+
+✅ SOLUCIONES APLICADAS:
+──────────────────────────
+
+1️⃣  vercel.json ACTUALIZADO
+   ├─ Agregado manejo de static files (CSS, JS, imágenes)
+   ├─ Agregado manejo de templates (HTML)
+   ├─ Rutas correctas para cada tipo de archivo
+   └─ Prioridad: static → templates → app.py
+
+2️⃣  app.py MEJORADO
+   ├─ Uso de rutas absolutas con os.path
+   ├─ Configuración explícita de template_folder
+   ├─ Configuración explícita de static_folder
+   ├─ static_url_path='/static' explícito
+   └─ Mejor error handling
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 CAMBIOS REALIZADOS:
+
+ANTES (❌):
+app = Flask(__name__)
+├─ Busca templates en: ./templates (relativo)
+├─ Busca static en: ./static (relativo)
+└─ En Vercel esto puede fallar
+
+AHORA (✅):
+app = Flask(__name__, 
+    template_folder=TEMPLATE_DIR,      # Ruta absoluta
+    static_folder=STATIC_DIR,          # Ruta absoluta
+    static_url_path='/static'          # Explícito
+)
+├─ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+├─ Rutas siempre correctas, incluso en Vercel
+└─ Fallback a error 500 si no encuentra template
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 PASOS FINALES:
+
+1. Abre terminal en: C:\Users\Aaron\Documents\Crown-Counter\Crown-Counter
+
+2. Ejecuta:
+   git add .
+   git commit -m "Fix #2: Arreglar rutas de templates en Vercel"
+   git push
+
+3. Espera 1-2 minutos a que Vercel redesplegue
+
+4. Abre: https://crown-counter-gfjl.vercel.app/
+
+5. ¡Debería cargar ahora! ✅
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ SI AÚN NO CARGA:
+
+Revisa que:
+✓ DATABASE_URL esté configurado en Vercel Settings → Environment Variables
+✓ La tabla 'plantas' exista en Supabase
+✓ Ningún error en Vercel Deployments → Logs
+
+═══════════════════════════════════════════════════════════════════════════════

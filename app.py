@@ -8,7 +8,16 @@ import os
 import signal
 import threading
 
-app = Flask(__name__)
+# 🔧 Configurar rutas correctas para Vercel
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+
+app = Flask(__name__, 
+    template_folder=TEMPLATE_DIR,
+    static_folder=STATIC_DIR,
+    static_url_path='/static'
+)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
@@ -26,7 +35,7 @@ def index():
         return render_template('index.html')
     except Exception as e:
         print(f"❌ Error cargando index: {e}")
-        return jsonify({"error": "Error", "img": IMG_RESPALDO}), 500
+        return jsonify({"error": "Error cargando página", "img": IMG_RESPALDO}), 500
 
 @app.route("/upload", methods=["POST"])
 def upload():
