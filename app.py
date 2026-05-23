@@ -1,30 +1,20 @@
 from flask import Flask, render_template, request, jsonify
 from plantapi import identificar_planta as api
 from consulta_img import obtener_imagen as buscar_img
-from conexion_base import inicializar_base as comprobar
+# Importamos la función de conexión y de verificación desde tu archivo
+from conexion_base import get_connection, verificar_tabla 
 from werkzeug.utils import secure_filename
-import psycopg2
 import uuid
 import os
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
-    
-comprobar()
 
+# Verificación informativa al arrancar la app
 try:
-    conexion = psycopg2.connect(
-        host="localhost",
-        database="plantas_db",
-        user="postgres",
-        password="plantas_db1234567890_*",
-        port="5432"
-    )
-    print("Conexión exitosa a PostgreSQL")
+    verificar_tabla()
 except Exception as e:
-    print("Error de conexión:", e)
-
-cursor = conexion.cursor()
+    print("Aviso en verificación inicial:", e)
 
 @app.route('/')
 def index():
@@ -35,6 +25,7 @@ def upload():
     imagenes = request.files.getlist("imagen")
     imagenes_n = []
     
+    # En Vercel 'static/uploads' no persistirá, pero para el flujo temporal sirve
     if not os.path.exists('static/uploads'):
         os.makedirs('static/uploads')
     
@@ -49,7 +40,6 @@ def upload():
     if not imagenes_n:
         return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0}), 400
     
-    # Dejamos "auto" tal cual lo tenías originalmente para no alterar los parámetros de tu compañero
     consulta = api(imagenes_n, "auto", "all")
     
     for ruta in imagenes_n:
@@ -61,39 +51,53 @@ def upload():
     
 def procesar_peticion(consulta):
     if consulta["nombre"] != "Indeterminado":
-        # Traemos las columnas en un orden estricto y conocido
-        cursor.execute("SELECT imagen, humedad, temperatura FROM plantas WHERE nombre_cientifico = %s;", (consulta["nombre"],))
-        respuesta = cursor.fetchall()
-        
-        if len(respuesta) == 0:
-            # Si la planta es nueva
-            print(f"Planta nueva detectada: {consulta['nombre']}. Buscando imagen...")
-            terminos_busqueda = [consulta["nombre"]]
-            if consulta["alias"] != "Ninguno":
-                terminos_busqueda.append(consulta["alias"])
+        # Abrimos la conexión dinámicamente para la petición
+        conexion = get_connection()
+        if conexion is None:
+            print("❌ No se pudo establecer conexión con Supabase en esta petición.")
+            return consulta
             
-            try:
-                consulta["img"] = buscar_img(terminos_busqueda)
-            except Exception as err_img:
-                print("Error al buscar imagen en la web:", err_img)
-                consulta["img"] = "" # Salvaguarda por si falla el buscador externo
+        try:
+            cursor = conexion.cursor()
+            
+            # Traemos las columnas en un orden estricto de Supabase
+            cursor.execute("SELECT imagen, humedad, temperatura FROM public.plantas WHERE nombre_cientifico = %s;", (consulta["nombre"],))
+            respuesta = cursor.fetchall()
+            
+            if len(respuesta) == 0:
+                print(f"Planta nueva detectada: {consulta['nombre']}. Buscando imagen...")
+                terminos_busqueda = [consulta["nombre"]]
+                if consulta["alias"] != "Ninguno":
+                    terminos_busqueda.append(consulta["alias"])
                 
-            # Insertar en la base de datos
-            try:
-                sql = "INSERT INTO plantas (nombre_cientifico, nombres_comunes, humedad, temperatura, imagen) VALUES (%s, %s, 0, 0, %s);"
-                values = (consulta["nombre"], consulta["alias"], consulta["img"])
-                cursor.execute(sql, values)
-                conexion.commit()
-                print("Planta guardada con éxito en la base de datos.")
-            except Exception as err_db:
-                conexion.rollback()
-                print("Error al insertar en la base de datos, haciendo rollback:", err_db)
-        else:
-            # Si ya existe, como nuestro SELECT pidió (imagen, humedad, temperatura) el orden es fijo:
-            print("Planta encontrada en la base de datos. Recuperando registros...")
-            consulta["img"] = respuesta[0][0]          # 0 es imagen
-            consulta["humedad"] = respuesta[0][1]      # 1 es humedad
-            consulta["temperatura"] = respuesta[0][2]  # 2 es temperatura
+                try:
+                    consulta["img"] = buscar_img(terminos_busqueda)
+                except Exception as err_img:
+                    print("Error al buscar imagen en la web:", err_img)
+                    consulta["img"] = ""
+                    
+                # Insertar en la base de datos de Supabase
+                try:
+                    sql = "INSERT INTO public.plantas (nombre_cientifico, nombres_comunes, humedad, temperatura, imagen) VALUES (%s, %s, 0, 0, %s);"
+                    values = (consulta["nombre"], consulta["alias"], consulta["img"])
+                    cursor.execute(sql, values)
+                    conexion.commit()
+                    print("Planta guardada con éxito en Supabase.")
+                except Exception as err_db:
+                    conexion.rollback()
+                    print("Error al insertar en Supabase, haciendo rollback:", err_db)
+            else:
+                print("Planta encontrada en Supabase. Recuperando registros...")
+                consulta["img"] = respuesta[0][0]          # 0 es imagen
+                consulta["humedad"] = respuesta[0][1]      # 1 es humedad
+                consulta["temperatura"] = respuesta[0][2]  # 2 es temperatura
+
+            cursor.close()
+        except Exception as e:
+            print("Error procesando la consulta SQL:", e)
+        finally:
+            # Siempre cerramos la conexión para no agotar el pool de Supabase
+            conexion.close()
 
     # Validación final de la imagen
     if not consulta.get("img") or consulta["img"] == '':
