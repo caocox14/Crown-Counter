@@ -1,6 +1,6 @@
 /* ============================================================
     main.js - El cerebro interactivo de PlantApp
-    Corregido: Gestión de vista previa e identificación IA
+    Optimizado: Prevención de dobles peticiones y bloqueos de interfaz
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input'); 
     const dropZone = document.getElementById('drop-zone');
     const formIA = document.getElementById('upload-form');
-    const btnAnalizar = document.getElementById('btn-analizar');
 
     if (fileInput && dropZone) {
         fileInput.addEventListener('change', function(e) {
@@ -43,22 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    // Ocultamos el texto e icono original por completo
                     const promptText = dropZone.querySelector('.prompt-text'); 
                     if (promptText) promptText.classList.add('hidden');
 
-                    // Buscamos si ya existe una preview para no duplicarla
                     let previewImg = dropZone.querySelector('.preview-img');
                     if (!previewImg) {
                         previewImg = document.createElement('img');
-                        // CORRECCIÓN CLAVE: Quitamos 'absolute inset-0' para evitar que se mutile la foto
-                        // Usamos max-h-full y object-contain para que la foto se ajuste perfectamente al contenedor sin cortarse
                         previewImg.className = 'preview-img max-w-full max-h-full object-contain rounded-2xl z-0 transition-all duration-300 shadow-sm';
                         dropZone.appendChild(previewImg);
                     }
                     previewImg.src = event.target.result;
                     
-                    // Cambiamos el borde y ajustamos el layout del contenedor de carga
                     dropZone.classList.remove('border-dashed', 'border-green-200');
                     dropZone.classList.add('border-solid', 'border-green-600', 'bg-green-50/10', 'p-2');
                 }
@@ -67,20 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (formIA && btnAnalizar) {
-        formIA.addEventListener('submit', async (e) => {
-            btnAnalizar.disabled = true;
-            btnAnalizar.style.height = `${btnAnalizar.offsetHeight}px`; 
-            btnAnalizar.innerHTML = `
-                <div class="flex items-center justify-center gap-3">
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-sm">Analizando...</span>
-                </div>`;
-            await analizarimagen(e);
-        });
+    // Centralizamos el submit aquí de forma limpia para evitar duplicidad
+    if (formIA) {
+        formIA.addEventListener('submit', analizarimagen);
     }
 
     // ============================================================
@@ -123,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================================
-    // 4. ACTUALIZACIÓN DE DATOS (POLLING)
+    // 4. ACTUALIZACIÓN DE DATOS (POLLING DE SENSORES SIMULADOS)
     // ============================================================
     async function fetchSensorData() {
         try {
@@ -157,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchSensorData, 10000);
 });
 
+// Función de análisis corregida: procesa de manera segura y única la petición
 async function analizarimagen(e) {
     e.preventDefault(); 
     
@@ -200,7 +184,8 @@ async function analizarimagen(e) {
             document.getElementById('res-planta-barra').style.width = `${certeza}%`;
 
             // Renderizar la URL de la imagen devuelta
-            document.getElementById('res-planta-img').src = data.img;
+            const imgElement = document.getElementById('res-planta-img');
+            if (imgElement) imgElement.src = data.img;
 
             if (resultadoDiv) {
                 resultadoDiv.classList.remove('hidden');
