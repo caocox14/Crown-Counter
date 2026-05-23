@@ -10,14 +10,15 @@ import os
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 
-# Verificación informativa al arrancar la app
-try:
-    verificar_tabla()
-except Exception as e:
-    print("Aviso en verificación inicial:", e)
-
 @app.route('/')
 def index():
+    # 💡 Se ejecuta de forma segura aquí al cargar la página,
+    # evitando que Vercel mate el servidor por tardar en arrancar.
+    try:
+        verificar_tabla()
+    except Exception as e:
+        print("Aviso en verificación inicial:", e)
+        
     return render_template('index.html')
 
 @app.route("/upload", methods=["POST"])
