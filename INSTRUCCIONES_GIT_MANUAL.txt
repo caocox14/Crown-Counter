@@ -1,0 +1,112 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  📝 INSTRUCCIONES MANUALES PARA GIT PUSH                     ║
+║              (Debido a limitaciones técnicas del ambiente)                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🔧 OPCIÓN 1: DESDE VS CODE (MÁS FÁCIL)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abre VS Code
+2. Abre la carpeta: C:\Users\Aaron\Documents\Crown-Counter\Crown-Counter
+3. Abre la terminal integrada (Ctrl + `)
+4. Pega esto en la terminal:
+
+git add . && git commit -m "Fix: Arreglar timeout en Vercel con reintentos y timeouts" -m "- Agregado vercel.json con configuración Python" -m "- Mejorada conexion_base.py con reintentos automáticos (3x) y timeouts" -m "- Optimizado app.py con signal/alarm de 55 segundos" -m "- Agregados handlers para errores 504 y 500" && git push
+
+5. Presiona ENTER y listo ✅
+
+
+🔧 OPCIÓN 2: DESDE CMD/GIT BASH
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abre CMD o Git Bash
+2. Navega a la carpeta:
+   cd C:\Users\Aaron\Documents\Crown-Counter\Crown-Counter
+
+3. Ejecuta este comando (todo en una línea):
+
+git add . && git commit -m "Fix: Arreglar timeout en Vercel con reintentos y timeouts" -m "- Agregado vercel.json" -m "- Mejorada conexion_base.py" -m "- Optimizado app.py" && git push
+
+4. Presiona ENTER ✅
+
+
+🔧 OPCIÓN 3: PASO A PASO DESDE CMD
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abre CMD
+2. Navega a la carpeta:
+   cd C:\Users\Aaron\Documents\Crown-Counter\Crown-Counter
+
+3. Prepara los cambios:
+   git add .
+
+4. Verifica qué cambios se van a subir:
+   git status
+
+5. Crea el commit:
+   git commit -m "Fix: Arreglar timeout en Vercel con reintentos y timeouts"
+
+6. Sube a GitHub:
+   git push
+
+7. Verás algo como:
+   ✓ Counting objects...
+   ✓ Compressing objects...
+   ✓ Writing objects...
+   ✓ Everything up-to-date
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    ✅ VERIFICACIÓN POST-PUSH                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Después de ejecutar git push, verifica:
+
+1. Ve a GitHub:
+   https://github.com/jorehash/SRE-1 (o tu repositorio)
+
+2. Debería mostrarte un commit reciente con:
+   ✅ vercel.json (NUEVO)
+   ✅ app.py (MODIFICADO)
+   ✅ conexion_base.py (MODIFICADO)
+   ✅ SETUP_VERCEL.md (NUEVO)
+   ✅ CAMBIOS_REALIZADOS.txt (NUEVO)
+
+3. Vercel automáticamente:
+   ✓ Detectará los cambios
+   ✓ Iniciará un nuevo deployment
+   ✓ En 1-2 minutos estará listo
+
+4. Monitorea en:
+   https://vercel.com/dashboard
+   → Tu proyecto "crown-counter-gfjl"
+   → Mira el estado en "Deployments"
+
+5. Cuando termine, prueba:
+   https://crown-counter-gfjl.vercel.app/
+   ✓ Debería cargar sin timeout
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  ❓ PREGUNTAS FRECUENTES                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+P: ¿Cómo sé que se subió correctamente?
+R: Cuando veas: "master -> master" en la salida del git push
+
+P: ¿Qué pasa si me pide credenciales?
+R: Si usa HTTPS, ingresa tu token de GitHub personal
+   Si usa SSH, asegúrate de tener las claves configuradas
+
+P: ¿Cuánto tarda Vercel en redeploy?
+R: Normalmente 1-2 minutos desde que detecta los cambios
+
+P: ¿Dónde veo los logs del deployment?
+R: Vercel Dashboard → tu proyecto → Deployments → última → Function Logs
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+¡Ejecuta uno de los comandos de arriba y luego verifica que todo esté en GitHub!
+
+═══════════════════════════════════════════════════════════════════════════════

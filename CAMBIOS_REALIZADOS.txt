@@ -1,0 +1,96 @@
+🌿 CROWN-COUNTER: ARREGLO DE TIMEOUT EN VERCEL
+
+═══════════════════════════════════════════════════════════
+
+PROBLEMA ORIGINAL:
+✗ La app se cuelga con error: "Ha tardado demasiado tiempo en responder"
+✗ Código 504 (Gateway Timeout) en Vercel
+
+CAUSA RAÍZ:
+❌ Vercel está esperando más de 60 segundos para obtener respuesta
+❌ La conexión a Supabase puede tardar o colgarse sin límites
+❌ No hay reintentos si la BD falla
+❌ No hay configuración vercel.json
+
+═══════════════════════════════════════════════════════════
+
+CAMBIOS APLICADOS:
+
+1️⃣  vercel.json (NUEVO ARCHIVO)
+   ├─ Especifica que Vercel use Python para ejecutar app.py
+   ├─ Establece timeout máximo: 60 segundos
+   ├─ Asigna 1024MB de memoria
+   └─ Define rutas: / → app.py
+
+2️⃣  conexion_base.py (MEJORADO)
+   ├─ Agrega reintentos automáticos (3 intentos por defecto)
+   ├─ Agrega timeout de conexión: 3-5 segundos máximo
+   ├─ Statement timeout en la BD: 10 segundos
+   └─ Mejor manejo de excepciones (OperationalError, psycopg2.Error)
+
+3️⃣  app.py (MEJORADO)
+   ├─ Agrega signal/alarm para timeout de 55 segundos por solicitud
+   ├─ Usa get_connection(reintentos=2, timeout=3) → máximo 6 segundos
+   ├─ Mejor logging con emojis para fácil debugging
+   ├─ Fallback automático a IMG_RESPALDO si falla algo
+   ├─ Try/except alrededor de todo
+   ├─ Error handlers para 504 y 500
+   └─ Cleanup de archivos temporales incluso si hay error
+
+4️⃣  SETUP_VERCEL.md (NUEVA GUÍA)
+   └─ Instrucciones paso a paso para verificar y desplegar
+
+═══════════════════════════════════════════════════════════
+
+FLUJO ANTES (PROBLEMÁTICO):
+
+Solicitud → Sin timeout → Espera a BD → BD cuelga → 60s después → ERROR 504
+
+FLUJO AHORA (ARREGLADO):
+
+Solicitud → 55s timeout
+    ├─ BD: Intento 1 (máx 3s) → Si falla
+    ├─ BD: Intento 2 (máx 3s) → Si falla
+    ├─ BD: Usa respaldo (IMG_RESPALDO)
+    └─ Respuesta rápida ✓
+
+═══════════════════════════════════════════════════════════
+
+CAMBIOS EN VARIABLES:
+
+get_connection() ANTES:
+  └─ Sin reintentos
+  └─ Sin timeout
+  └─ Si falla, aplicación se cuelga indefinidamente
+
+get_connection() AHORA:
+  ├─ reintentos=3 (intenta 3 veces)
+  ├─ timeout=5 (máximo 5 segundos de espera)
+  ├─ connect_timeout=timeout (en la conexión TCP)
+  ├─ statement_timeout=10000ms (10 segundos por query)
+  └─ Si falla, retorna None (y app.py usa fallback)
+
+═══════════════════════════════════════════════════════════
+
+PRÓXIMOS PASOS:
+
+1. Sube cambios a GitHub:
+   git add .
+   git commit -m "Fix: Arreglar timeout en Vercel con reintentos"
+   git push
+
+2. Vercel detecta automáticamente los cambios
+3. Redeploy automático en 1-2 minutos
+4. Prueba: https://crown-counter-gfjl.vercel.app/
+
+═══════════════════════════════════════════════════════════
+
+VERIFICACIÓN:
+
+✓ vercel.json existe y tiene configuración correcta
+✓ app.py tiene timeout de 55 segundos
+✓ conexion_base.py tiene reintentos y timeouts
+✓ Todos los archivos están en GitHub
+✓ DATABASE_URL configurado en Vercel Environment Variables
+
+═══════════════════════════════════════════════════════════

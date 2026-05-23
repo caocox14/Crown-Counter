@@ -1,23 +1,39 @@
 import os
 import psycopg2
+from psycopg2 import OperationalError
+import time
 
 
-def get_connection():
+def get_connection(reintentos=3, timeout=5):
     """
     Conexión a la base de datos usando variable de entorno (Supabase / Vercel)
+    con reintentos y timeout para evitar cuelgues.
     """
-    try:
-        database_url = os.environ.get("DATABASE_URL")
+    database_url = os.environ.get("DATABASE_URL")
 
-        if not database_url:
-            raise Exception("❌ DATABASE_URL no está definida en las variables de entorno")
-
-        conexion = psycopg2.connect(database_url)
-        return conexion
-
-    except Exception as e:
-        print("❌ Error al conectar a la base de datos:", e)
+    if not database_url:
+        print("❌ DATABASE_URL no está definida en las variables de entorno")
         return None
+
+    for intento in range(reintentos):
+        try:
+            conexion = psycopg2.connect(
+                database_url,
+                connect_timeout=timeout,
+                options="-c statement_timeout=10000"
+            )
+            print(f"✅ Conexión a DB establecida exitosamente")
+            return conexion
+
+        except (OperationalError, psycopg2.Error) as e:
+            print(f"⚠️ Intento {intento + 1}/{reintentos} - Error conexión DB: {e}")
+            if intento < reintentos - 1:
+                time.sleep(1)
+            else:
+                print("❌ No se pudo conectar a la base de datos después de reintentos")
+                return None
+
+    return None
 
 
 def verificar_tabla():

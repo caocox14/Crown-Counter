@@ -5,51 +5,83 @@ from conexion_base import get_connection, verificar_tabla
 from werkzeug.utils import secure_filename
 import uuid
 import os
+import signal
+import threading
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
+app.config['PROPAGATE_EXCEPTIONS'] = True
 
 # 🌿 Imagen de respaldo elegante por si la DB viene vacía o falla el scraping
 IMG_RESPALDO = 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=600&q=80'
 
+# ⏱️ Handler de timeout para Vercel (máx 60 segundos)
+def timeout_handler(signum, frame):
+    raise TimeoutError("⏱️ Solicitud excedió el tiempo máximo")
+
 @app.route('/')
 def index():
     # ⚡ Carga al instante: Sin consultas pesadas a la DB en la raíz
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"❌ Error cargando index: {e}")
+        return jsonify({"error": "Error", "img": IMG_RESPALDO}), 500
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    imagenes = request.files.getlist("imagen")
-    imagenes_n = []
+    # ⏱️ Timeout de seguridad: 55 segundos (Vercel máximo es 60)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(55)
     
-    # 💡 En Vercel, el único directorio con permisos de escritura real es '/tmp'
-    ruta_temporal = '/tmp/uploads'
-    if not os.path.exists(ruta_temporal):
-        try:
-            os.makedirs(ruta_temporal)
-        except Exception as e:
-            print("Aviso creando carpeta temporal:", e)
-    
-    for imagen in imagenes:
-        if imagen.filename == '':
-            continue
-        _, extension = os.path.splitext(secure_filename(imagen.filename))
-        # Guardamos de forma segura en el almacenamiento volátil del servidor
-        ruta_imagen = f"{ruta_temporal}/{str(uuid.uuid4())}{extension}"
-        imagen.save(ruta_imagen)
-        imagenes_n.append(ruta_imagen)
+    try:
+        imagenes = request.files.getlist("imagen")
+        imagenes_n = []
         
-    if not imagenes_n:
-        return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0, "img": IMG_RESPALDO}), 400
-    
-    consulta = api(imagenes_n, "auto", "all")
-    
-    for ruta in imagenes_n:
-        if os.path.exists(ruta):
-            os.remove(ruta)
+        # 💡 En Vercel, el único directorio con permisos de escritura real es '/tmp'
+        ruta_temporal = '/tmp/uploads'
+        if not os.path.exists(ruta_temporal):
+            try:
+                os.makedirs(ruta_temporal)
+            except Exception as e:
+                print("⚠️ Aviso creando carpeta temporal:", e)
+        
+        for imagen in imagenes:
+            if imagen.filename == '':
+                continue
+            _, extension = os.path.splitext(secure_filename(imagen.filename))
+            # Guardamos de forma segura en el almacenamiento volátil del servidor
+            ruta_imagen = f"{ruta_temporal}/{str(uuid.uuid4())}{extension}"
+            imagen.save(ruta_imagen)
+            imagenes_n.append(ruta_imagen)
             
-    resultado_final = procesar_peticion(consulta)
-    return jsonify(resultado_final)
+        if not imagenes_n:
+            return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0, "img": IMG_RESPALDO}), 400
+        
+        print(f"🖼️ Identificando {len(imagenes_n)} imagen(es)...")
+        consulta = api(imagenes_n, "auto", "all")
+        
+        for ruta in imagenes_n:
+            if os.path.exists(ruta):
+                try:
+                    os.remove(ruta)
+                except:
+                    pass
+                
+        resultado_final = procesar_peticion(consulta)
+        signal.alarm(0)  # Cancelar timeout
+        return jsonify(resultado_final)
+        
+    except TimeoutError:
+        print("⏱️ TIMEOUT en /upload - solicitud tardó demasiado")
+        signal.alarm(0)
+        return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0, "img": IMG_RESPALDO, "error": "timeout"}), 504
+    except Exception as e:
+        print(f"❌ Error en /upload: {type(e).__name__}: {e}")
+        signal.alarm(0)
+        return jsonify({"nombre": "Indeterminado", "error": str(e), "img": IMG_RESPALDO}), 500
+    finally:
+        signal.alarm(0)
     
 def procesar_peticion(consulta):
     # Aseguramos que la clave 'img' exista siempre en el diccionario
@@ -57,9 +89,10 @@ def procesar_peticion(consulta):
         consulta["img"] = ""
 
     if consulta["nombre"] != "Indeterminado":
-        conexion = get_connection()
+        # 🔄 Reintentos con timeout corto para evitar cuelgues
+        conexion = get_connection(reintentos=2, timeout=3)
         if conexion is None:
-            print("❌ No se pudo establecer conexión con Supabase en esta petición.")
+            print("❌ No se pudo conectar a Supabase - usando datos de respaldo")
             consulta["img"] = IMG_RESPALDO
             return consulta
             
@@ -71,16 +104,17 @@ def procesar_peticion(consulta):
             respuesta = cursor.fetchall()
             
             if len(respuesta) == 0:
-                print(f"Planta nueva detectada: {consulta['nombre']}. Iniciando búsqueda externa...")
+                print(f"✨ Planta nueva detectada: {consulta['nombre']}")
                 terminos_busqueda = [consulta["nombre"]]
                 if consulta["alias"] != "Ninguno":
                     terminos_busqueda.append(consulta["alias"])
                 
-                # ⚡ Ejecutamos el raspado con el nuevo timeout veloz de 1.5s
+                # ⚡ Ejecutamos el raspado con timeout veloz de 1.5s
                 try:
                     consulta["img"] = buscar_img(terminos_busqueda)
+                    print(f"📸 Imagen encontrada para {consulta['nombre']}")
                 except Exception as err_img:
-                    print("Error al buscar imagen en la web:", err_img)
+                    print(f"⚠️ Error buscando imagen: {err_img}")
                     consulta["img"] = ""
                     
                 # Insertamos los nuevos registros de forma limpia
@@ -89,12 +123,12 @@ def procesar_peticion(consulta):
                     values = (consulta["nombre"], consulta["alias"], consulta["img"])
                     cursor.execute(sql, values)
                     conexion.commit()
-                    print("Planta guardada con éxito en Supabase.")
+                    print(f"✅ Planta '{consulta['nombre']}' guardada en Supabase")
                 except Exception as err_db:
                     conexion.rollback()
-                    print("Error al insertar en Supabase, haciendo rollback:", err_db)
+                    print(f"⚠️ Error al guardar: {err_db}")
             else:
-                print("Planta encontrada en Supabase. Recuperando registros instantáneamente...")
+                print(f"🔍 Planta encontrada en Supabase: {consulta['nombre']}")
                 # ⚡ FILTRO: Si la columna imagen en Supabase es NULL o vacía, la guardamos como "" para corregirla abajo
                 base_img = respuesta[0][0]
                 consulta["img"] = base_img if base_img else ""
@@ -103,11 +137,14 @@ def procesar_peticion(consulta):
 
             cursor.close()
         except Exception as e:
-            print("Error procesando la consulta SQL:", e)
+            print(f"❌ Error en SQL: {type(e).__name__}: {e}")
         finally:
-            conexion.close()
+            try:
+                conexion.close()
+            except:
+                pass
 
-    # ⚡ CONTROL DE SEGURIDAD ABSOLUTO: Si la imagen quedó vacía, es nula o dice "EMPTY", usa la de respaldo
+    # ⚡ CONTROL DE SEGURIDAD ABSOLUTO: Si la imagen quedó vacía, usa la de respaldo
     if not consulta.get("img") or str(consulta["img"]).strip() == "" or str(consulta["img"]).upper() == "EMPTY":
         consulta["img"] = IMG_RESPALDO
         
@@ -116,6 +153,14 @@ def procesar_peticion(consulta):
 @app.errorhandler(413)
 def archivo_muy_grande(e):
     return jsonify({"nombre": "Indeterminado", "error": "Archivo muy pesado para el sistema", "img": IMG_RESPALDO}), 413
+
+@app.errorhandler(504)
+def gateway_timeout(e):
+    return jsonify({"nombre": "Indeterminado", "error": "Solicitud tardó demasiado tiempo", "img": IMG_RESPALDO}), 504
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return jsonify({"nombre": "Indeterminado", "error": "Error interno del servidor", "img": IMG_RESPALDO}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
