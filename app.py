@@ -9,6 +9,9 @@ import os
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 
+# 🌿 Imagen de respaldo elegante por si la DB viene vacía o falla el scraping
+IMG_RESPALDO = 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=600&q=80'
+
 @app.route('/')
 def index():
     # ⚡ Carga al instante: Sin consultas pesadas a la DB en la raíz
@@ -37,7 +40,7 @@ def upload():
         imagenes_n.append(ruta_imagen)
         
     if not imagenes_n:
-        return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0}), 400
+        return jsonify({"nombre": "Indeterminado", "alias": "Ninguno", "certeza": 0, "img": IMG_RESPALDO}), 400
     
     consulta = api(imagenes_n, "auto", "all")
     
@@ -49,10 +52,15 @@ def upload():
     return jsonify(resultado_final)
     
 def procesar_peticion(consulta):
+    # Aseguramos que la clave 'img' exista siempre en el diccionario
+    if "img" not in consulta:
+        consulta["img"] = ""
+
     if consulta["nombre"] != "Indeterminado":
         conexion = get_connection()
         if conexion is None:
             print("❌ No se pudo establecer conexión con Supabase en esta petición.")
+            consulta["img"] = IMG_RESPALDO
             return consulta
             
         try:
@@ -87,7 +95,9 @@ def procesar_peticion(consulta):
                     print("Error al insertar en Supabase, haciendo rollback:", err_db)
             else:
                 print("Planta encontrada en Supabase. Recuperando registros instantáneamente...")
-                consulta["img"] = respuesta[0][0]          
+                # ⚡ FILTRO: Si la columna imagen en Supabase es NULL o vacía, la guardamos como "" para corregirla abajo
+                base_img = respuesta[0][0]
+                consulta["img"] = base_img if base_img else ""
                 consulta["humedad"] = respuesta[0][1]      
                 consulta["temperatura"] = respuesta[0][2]  
 
@@ -97,15 +107,15 @@ def procesar_peticion(consulta):
         finally:
             conexion.close()
 
-    # Si no se encontró imagen por ningún lado, asignamos la de respaldo por defecto
-    if not consulta.get("img") or consulta["img"] == '':
-        consulta["img"] = 'https://png.pngtree.com/png-clipart/20230405/original/pngtree-question-mark-icon-png-image_9025635.png'
+    # ⚡ CONTROL DE SEGURIDAD ABSOLUTO: Si la imagen quedó vacía, es nula o dice "EMPTY", usa la de respaldo
+    if not consulta.get("img") or str(consulta["img"]).strip() == "" or str(consulta["img"]).upper() == "EMPTY":
+        consulta["img"] = IMG_RESPALDO
         
     return consulta
 
 @app.errorhandler(413)
 def archivo_muy_grande(e):
-    return jsonify({"nombre": "Indeterminado", "error": "Archivo muy pesado para el sistema"}), 413
+    return jsonify({"nombre": "Indeterminado", "error": "Archivo muy pesado para el sistema", "img": IMG_RESPALDO}), 413
 
 if __name__ == "__main__":
     app.run(debug=True)
