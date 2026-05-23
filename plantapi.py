@@ -1,36 +1,66 @@
 import requests
-from consulta_img import obtener_imagen as oi
 import json
 
-def identificar_planta(imagenes,organ,project):
-    print("Relizando peticiones al api")
+def identificar_planta(imagenes, organ, project):
+    print("Realizando peticiones a la API de PlantNet...")
     API_KEY = "2b10hm5QUfNvomgsqb6c5F2we"
-    PROJECT = project; # You can choose a more specific flora, see: /docs/newfloras
-    data={}
-    datap = { 'organs': [] }
+    PROJECT = project
+    
+    # Estructura base de retorno por defecto
+    data = {
+        "nombre": "Indeterminado",
+        "certeza": 0,
+        "alias": "Ninguno",
+        "img": ""
+    }
+    
     files = []
+    datap = { 'organs': [] }
+    
+    # Abrimos los archivos de imagen de manera segura
     for direc in imagenes:
-        image = open(direc, 'rb')
-        files.append(('images', (direc, image)))
-        datap['organs'].append(organ)
-    api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
-    req = requests.Request('POST',url=api_endpoint, files=files, data=datap)
-    preparar = req.prepare()
+        try:
+            image = open(direc, 'rb')
+            files.append(('images', (direc, image)))
+            datap['organs'].append(organ)
+        except Exception as e:
+            print(f"Error al abrir la imagen {direc}: {e}")
+            return data
 
-    s=requests.session()
-    resultado=json.loads(s.send(preparar).text)
-    print("lllego",resultado)
-    try:#data de respuesta para plantas no encontradas
-        if int(resultado["statusCode"]) in (400,404):
-            data={"nombre": "Indeterminado","certeza":0.0,"alias":"Ninguno","img":"https://static.wikia.nocookie.net/ficcion-sin-limites/images/5/57/Peashooter7.png/revision/latest/scale-to-width-down/250?cb=20210226142630&path-prefix=es"}
-    except KeyError as k:
-        planta = resultado["results"][0]
-        print("Resultado: ",planta)
-        data["nombre"]=planta["species"]["scientificNameWithoutAuthor"]
-        data["certeza"]=planta["score"]
-        data["alias"]=planta["species"]["commonNames"]
-        data["humedad"]=0
-        data["temperatura"]=0
-        data["img"]=''
-    print("igualmente eso ocurre si :",data)
+    api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
+    
+    try:
+        # Petición directa y limpia
+        response = requests.post(api_endpoint, files=files, data=datap)
+        
+        # IMPORTANTE: Cerrar los archivos en memoria obligatoriamente
+        for f in files:
+            f[1][1].close()
+            
+        resultado = response.json()
+        
+        # Validamos si la API retornó un error o statusCode de no encontrado
+        if "statusCode" in resultado and int(resultado["statusCode"]) in (400, 404):
+            return data
+            
+        if "results" in resultado and len(resultado["results"]) > 0:
+            planta = resultado["results"][0]
+            
+            # Procesamos los nombres comunes para enviarlos como un String limpio separado por comas
+            nombres_comunes = planta["species"].get("commonNames", [])
+            alias_limpio = ", ".join(nombres_comunes[:2]) if nombres_comunes else "Ninguno"
+            
+            # Multiplicamos el score (0.85 -> 85) para mandarlo como entero listo al Frontend
+            certeza_porcentaje = round(planta.get("score", 0.0) * 100)
+            
+            data["nombre"] = planta["species"].get("scientificNameWithoutAuthor", "Indeterminado")
+            data["certeza"] = certeza_porcentaje
+            data["alias"] = alias_limpio
+            data["humedad"] = 0
+            data["temperatura"] = 0
+            data["img"] = ''
+            
+    except Exception as e:
+        print("Error crítico en la comunicación con PlantNet:", e)
+        
     return data

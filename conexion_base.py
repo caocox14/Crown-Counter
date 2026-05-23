@@ -1,7 +1,6 @@
+import os
 import psycopg2
 from psycopg2 import sql
-import subprocess
-import os
 
 
 def inicializar_base():
@@ -14,66 +13,73 @@ def inicializar_base():
     port = "5432"
 
     try:
-        # =========================
-        # CONEXIÓN A POSTGRES (DB ADMIN)
-        # =========================
-        conexion = psycopg2.connect(
-            host=host,
-            database="postgres",
-            user=user,
-            password=password,
-            port=port
+        # 1. Conexión inicial para verificar/crear la base de datos
+        conexion_admin = psycopg2.connect(
+            host=host, database="postgres", user=user, password=password, port=port
         )
+        conexion_admin.autocommit = True
+        cursor_admin = conexion_admin.cursor()
 
-        conexion.autocommit = True
-        cursor = conexion.cursor()
-
-        # =========================
-        # VERIFICAR SI EXISTE DB
-        # =========================
-        cursor.execute(
-            "SELECT 1 FROM pg_database WHERE datname = %s",
-            (database,)
+        cursor_admin.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s", (database,)
         )
+        existe_db = cursor_admin.fetchone()
 
-        existe = cursor.fetchone()
-
-        if not existe:
+        if not existe_db:
             print("⚠️ Base no existe, creando...")
-
-            cursor.execute(
-                sql.SQL("CREATE DATABASE {}").format(
-                    sql.Identifier(database)
-                )
+            cursor_admin.execute(
+                sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database))
             )
+            print("✅ Base de datos creada con éxito.")
+        else:
+            print("ℹ️ La base de datos ya existe.")
 
-            print("✅ Base de datos creada")
+        cursor_admin.close()
+        conexion_admin.close()
 
-            cursor.close()
-            conexion.close()
+        # ========================================================
+        # 2. CONEXIÓN DIRECTA A PLANTAS_DB PARA VERIFICAR LA TABLA
+        # ========================================================
+        conexion_app = psycopg2.connect(
+            host=host, database=database, user=user, password=password, port=port
+        )
+        conexion_app.autocommit = True
+        cursor_app = conexion_app.cursor()
 
-            # =========================
-            # EJECUTAR SQL AUTOMÁTICAMENTE
-            # =========================
+        # Verificamos si la tabla 'plantas' existe en el esquema público
+        cursor_app.execute(
+            """
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'plantas'
+            );
+        """
+        )
+        existe_tabla = cursor_app.fetchone()[0]
+
+        if not existe_tabla:
+            print("⏳ Tabla 'plantas' no encontrada. Inyectando estructura SQL...")
+
+            # Leemos el archivo plantas_db.sql de forma nativa con Python
             ruta_sql = os.path.join(os.getcwd(), "plantas_db.sql")
 
-            env = os.environ.copy()
-            env["PGPASSWORD"] = password
+            if os.path.exists(ruta_sql):
+                with open(ruta_sql, "r", encoding="utf-8") as f:
+                    contenido_sql = f.read()
 
-            subprocess.run([
-                "psql",
-                "-U", user,
-                "-d", database,
-                "-f", ruta_sql
-            ], env=env, check=True)
-
-            print("✅ Base inicializada con SQL")
-
+                # Ejecutamos el script completo directamente en el cursor
+                cursor_app.execute(contenido_sql)
+                print("✅ ¡Tabla 'plantas' e información inicializadas desde el código!")
+            else:
+                print(
+                    f"❌ Error: No se encontró el archivo plantas_db.sql en: {ruta_sql}"
+                )
         else:
-            print("ℹ️ La base ya existe, no se ejecuta el SQL")
+            print("✅ La tabla 'plantas' ya existe y está lista para operar.")
 
-            cursor.close()
-            conexion.close()
+        cursor_app.close()
+        conexion_app.close()
 
     except Exception as e:
-        print("❌ Error:", e)
+        print("❌ Error crítico en la gestión de la base de datos:", e)

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700&display=swap');
 
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -19,9 +19,7 @@ body {
 
     /* Contenedor efecto vidrio */
     .glass-card {
-        /* En móvil ocupa todo el ancho sin redondear, en PC vuelve a ser una tarjeta */
         @apply bg-white/85 backdrop-blur-xl border-white/30 flex flex-col md:flex-row md:rounded-[3rem] md:shadow-2xl;
-        min-height: 100vh;
         width: 100%;
     }
 
@@ -35,18 +33,17 @@ body {
 
     /* Área de contenido scrolleable */
     .content-area {
-        /* Asegura que el contenido no se corte en móviles */
         @apply flex-1 flex flex-col overflow-y-auto bg-white/40 h-full pb-20 md:pb-0;
     }
 
     /* Tarjetas de estado */
     .stat-card {
-        @apply bg-white p-6 rounded-[2.5rem] shadow-lg border border-gray-100 flex items-center gap-4 transition-all min-h-[110px];
+        @apply bg-white p-4 md:p-6 rounded-[2.5rem] shadow-lg border border-gray-100 flex items-center gap-4 transition-all min-h-[90px] md:min-h-[110px];
     }
 
     /* Contenedores de iconos */
     .icon-container-blue, .icon-container-green, .icon-container-orange {
-        @apply w-16 h-16 rounded-2xl text-3xl flex items-center justify-center flex-shrink-0;
+        @apply w-12 h-12 md:w-16 md:h-16 rounded-2xl text-2xl md:text-3xl flex items-center justify-center flex-shrink-0;
     }
 
     .icon-container-blue { @apply bg-blue-50; }
@@ -58,9 +55,9 @@ body {
         @apply bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-all;
     }
 
-    /* Zona de carga de archivos */
+    /* Zona de carga de archivos (CORREGIDO: Sin la utilidad group dentro del @apply) */
     .drop-zone {
-        @apply hover:bg-green-50 transition-colors cursor-pointer border-2 border-dashed border-green-200 rounded-3xl p-12 flex flex-col items-center justify-center relative;
+        @apply relative hover:bg-green-50/50 transition-colors cursor-pointer border-2 border-dashed border-green-200 rounded-3xl flex flex-col items-center justify-center overflow-hidden w-full;
     }
 
     /* Filtro para iconos del sidebar */

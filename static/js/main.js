@@ -1,6 +1,6 @@
 /* ============================================================
-   main.js - El cerebro interactivo de PlantApp
-   Corregido: Gestión de vista previa e identificación IA
+    main.js - El cerebro interactivo de PlantApp
+    Corregido: Gestión de vista previa e identificación IA
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    // Ocultamos el texto e icono original
+                    // Ocultamos el texto e icono original por completo
                     const promptText = dropZone.querySelector('.prompt-text'); 
                     if (promptText) promptText.classList.add('hidden');
 
@@ -51,15 +51,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     let previewImg = dropZone.querySelector('.preview-img');
                     if (!previewImg) {
                         previewImg = document.createElement('img');
-                        // 'z-0' para que quede detrás del input invisible y puedas cambiar la foto si quieres
-                        previewImg.className = 'preview-img absolute inset-0 h-full w-full object-cover rounded-3xl p-1 animate-fade-in z-0';
+                        // CORRECCIÓN CLAVE: Quitamos 'absolute inset-0' para evitar que se mutile la foto
+                        // Usamos max-h-full y object-contain para que la foto se ajuste perfectamente al contenedor sin cortarse
+                        previewImg.className = 'preview-img max-w-full max-h-full object-contain rounded-2xl z-0 transition-all duration-300 shadow-sm';
                         dropZone.appendChild(previewImg);
                     }
                     previewImg.src = event.target.result;
                     
-                    // Cambiamos el borde para dar feedback de que ya hay algo
-                    dropZone.classList.remove('border-dashed');
-                    dropZone.classList.add('border-solid', 'border-green-500');
+                    // Cambiamos el borde y ajustamos el layout del contenedor de carga
+                    dropZone.classList.remove('border-dashed', 'border-green-200');
+                    dropZone.classList.add('border-solid', 'border-green-600', 'bg-green-50/10', 'p-2');
                 }
                 reader.readAsDataURL(file);
             }
@@ -67,22 +68,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (formIA && btnAnalizar) {
-
-    formIA.addEventListener('submit', async (e) => {
-        btnAnalizar.disabled = true;
-        // Mantenemos la altura para evitar que la página se mueva
-        btnAnalizar.style.height = `${btnAnalizar.offsetHeight}px`; 
-        btnAnalizar.innerHTML = `
-            <div class="flex items-center justify-center gap-3">
-                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="text-sm">Analizando...</span>
-            </div>`;
-        await analizarimagen(e);
-    });
-}
+        formIA.addEventListener('submit', async (e) => {
+            btnAnalizar.disabled = true;
+            btnAnalizar.style.height = `${btnAnalizar.offsetHeight}px`; 
+            btnAnalizar.innerHTML = `
+                <div class="flex items-center justify-center gap-3">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm">Analizando...</span>
+                </div>`;
+            await analizarimagen(e);
+        });
+    }
 
     // ============================================================
     // 3. CONFIGURACIÓN DE LA GRÁFICA (Chart.js)
@@ -157,22 +156,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(fetchSensorData, 10000);
 });
-async function analizarimagen(e){
-    e.preventDefault();
-        const form = e.target;
-        // Obtiene todos los datos del formulario
-        const formData = new FormData(form);
-        try {
-            const response = await fetch("/upload", {
-                method: "POST",
-                body: formData
-            });
-            // Si Flask devuelve texto HTML
-            const resultado = await response.text();
-            // Inserta el resultado en la página
-            //document.getElementById("resultado").innerHTML = resultado;
-            console.log("Respuesta del servidor2:", resultado);
-        } catch (error) {
-            console.error(error);
+
+async function analizarimagen(e) {
+    e.preventDefault(); 
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    const btnAnalizar = document.getElementById('btn-analizar');
+    const resultadoDiv = document.getElementById('resultado-ia');
+
+    if (btnAnalizar) {
+        btnAnalizar.disabled = true;
+        btnAnalizar.innerHTML = `
+            <div class="flex items-center justify-center gap-3">
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm">Analizando...</span>
+            </div>`;
+    }
+
+    try {
+        const response = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Respuesta inválida del servidor: ${response.status}`);
         }
+
+        const data = await response.json();
+        console.log("Datos limpios recibidos del backend:", data);
+
+        if (data) {
+            document.getElementById('res-planta-nombre').innerText = data.nombre || "Indeterminado";
+            document.getElementById('res-planta-alias').innerText = data.alias || "Ninguno";
+            
+            const certeza = data.certeza || 0;
+            document.getElementById('res-planta-certeza').innerText = `${certeza}%`;
+            document.getElementById('res-planta-barra').style.width = `${certeza}%`;
+
+            // Renderizar la URL de la imagen devuelta
+            document.getElementById('res-planta-img').src = data.img;
+
+            if (resultadoDiv) {
+                resultadoDiv.classList.remove('hidden');
+            }
+        }
+
+    } catch (error) {
+        console.error("Error en el flujo del Frontend:", error);
+        alert("Ocurrió un error al procesar el análisis de la planta.");
+    } finally {
+        if (btnAnalizar) {
+            btnAnalizar.disabled = false;
+            btnAnalizar.innerHTML = `<span>Analizar Imagen</span>`;
+        }
+    }
 }
