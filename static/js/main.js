@@ -181,11 +181,17 @@ async function analizarimagen(e) {
             
             const certeza = data.certeza || 0;
             document.getElementById('res-planta-certeza').innerText = `${certeza}%`;
-            document.getElementById('res-planta-barra').style.width = `${certeza}%`;
+            
+            const barra = document.getElementById('res-planta-barra');
+            if (barra) barra.style.width = `${certeza}%`;
 
-            // Renderizar la URL de la imagen devuelta
+            // ⚡ CORRECCIÓN VISUAL: Aseguramos la inyección correcta del link de imagen
             const imgElement = document.getElementById('res-planta-img');
-            if (imgElement) imgElement.src = data.img;
+            if (imgElement) {
+                // Si data.img no existe, es null o string vacío, inyectamos una imagen de respaldo limpia
+                imgElement.src = (data.img && data.img.trim() !== "") ? data.img : 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=600&q=80';
+                imgElement.classList.remove('hidden');
+            }
 
             if (resultadoDiv) {
                 resultadoDiv.classList.remove('hidden');
@@ -196,6 +202,7 @@ async function analizarimagen(e) {
         console.error("Error en el flujo del Frontend:", error);
         alert("Ocurrió un error al procesar el análisis de la planta.");
     } finally {
+        // ⚡ DESBLOQUEO DE INTERFAZ INTEGRAL: Siempre restablece el botón pase lo que pase
         if (btnAnalizar) {
             btnAnalizar.disabled = false;
             btnAnalizar.innerHTML = `<span>Analizar Imagen</span>`;
