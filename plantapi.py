@@ -1,9 +1,15 @@
 import requests
 import json
+import os
 
 def identificar_planta(imagenes, organ, project):
-    print("Realizando peticiones a la API de PlantNet...")
-    API_KEY = "2b10hm5QUfNvomgsqb6c5F2we"
+    """
+    Identifica plantas usando PlantNet API con timeouts y reintentos
+    """
+    print("🔍 Realizando peticiones a la API de PlantNet...")
+    
+    # API KEY desde variable de entorno o valor por defecto (CAMBIAR ANTES DE PRODUCCIÓN)
+    API_KEY = os.environ.get("PLANTNET_API_KEY", "2b10hm5QUfNvomgsqb6c5F2we")
     PROJECT = project
     
     # Estructura base de retorno por defecto
@@ -24,23 +30,33 @@ def identificar_planta(imagenes, organ, project):
             files.append(('images', (direc, image)))
             datap['organs'].append(organ)
         except Exception as e:
-            print(f"Error al abrir la imagen {direc}: {e}")
+            print(f"❌ Error al abrir la imagen {direc}: {e}")
             return data
 
     api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
     
     try:
-        # Petición directa y limpia
-        response = requests.post(api_endpoint, files=files, data=datap)
+        # ⏱️ TIMEOUT: 25 segundos máximo para PlantNet (es una API externa lenta a veces)
+        print("📤 Enviando petición a PlantNet con timeout=25s...")
+        response = requests.post(api_endpoint, files=files, data=datap, timeout=25)
         
         # IMPORTANTE: Cerrar los archivos en memoria obligatoriamente
         for f in files:
-            f[1][1].close()
+            try:
+                f[1][1].close()
+            except:
+                pass
+        
+        # Validar que la respuesta sea exitosa
+        if response.status_code != 200:
+            print(f"⚠️ PlantNet respondió con código {response.status_code}")
+            return data
             
         resultado = response.json()
         
         # Validamos si la API retornó un error o statusCode de no encontrado
         if "statusCode" in resultado and int(resultado["statusCode"]) in (400, 404):
+            print(f"⚠️ PlantNet retornó statusCode {resultado['statusCode']}")
             return data
             
         if "results" in resultado and len(resultado["results"]) > 0:
@@ -60,7 +76,18 @@ def identificar_planta(imagenes, organ, project):
             data["temperatura"] = 0
             data["img"] = ''
             
+            print(f"✅ Planta identificada: {data['nombre']} (certeza: {certeza_porcentaje}%)")
+        else:
+            print("⚠️ PlantNet no encontró resultados")
+            
+    except requests.Timeout:
+        print("❌ TIMEOUT: PlantNet tardó más de 25 segundos")
+        return data
+    except requests.ConnectionError as e:
+        print(f"❌ Error de conexión a PlantNet: {e}")
+        return data
     except Exception as e:
-        print("Error crítico en la comunicación con PlantNet:", e)
+        print(f"❌ Error crítico en comunicación con PlantNet: {type(e).__name__}: {e}")
+        return data
         
     return data

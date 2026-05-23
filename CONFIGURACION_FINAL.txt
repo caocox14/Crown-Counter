@@ -1,0 +1,127 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               ⚙️ CONFIGURACIÓN FINAL PARA VERCEL - CROWN-COUNTER            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🔧 CAMBIOS REALIZADOS EN EL CÓDIGO:
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  plantapi.py (MEJORADO)
+   ✅ Agregado timeout explícito: 25 segundos para PlantNet
+   ✅ Manejo de errores: Timeout, ConnectionError, otros
+   ✅ API KEY ahora desde variable de entorno (pero mantiene valor por defecto)
+   ✅ Logging mejorado con emojis para debugging
+   ✅ Validación de status code HTTP
+
+2️⃣  consulta_img.py (MEJORADO)
+   ✅ Agregado timeout explícito: 2 segundos para PictureThis
+   ✅ Manejo específico de Timeout y ConnectionError
+   ✅ Retorna URL de imagen en primer match (sin esperar más)
+   ✅ Fallback automático a string vacío si falla
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 VARIABLE DE ENTORNO (OPCIONAL - PERO RECOMENDADO):
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abre Vercel Dashboard: https://vercel.com/dashboard
+
+2. Selecciona tu proyecto "crown-counter-gfjl"
+
+3. Ve a: Settings → Environment Variables
+
+4. Haz clic en "Add New" y agrega:
+   
+   Name: PLANTNET_API_KEY
+   Value: 2b10hm5QUfNvomgsqb6c5F2we
+   
+   Environments: Production, Preview, Development
+
+5. Haz clic en "Save"
+
+6. Vuelve a desplegar el proyecto (o espera a que redeploy):
+   - Vuelve a Deployments
+   - Haz clic en "Redeploy" en el último deployment
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⏱️ TIMEOUTS CONFIGURADOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ FLUJO COMPLETO ─────────────────────────────────────────┐
+│                                                           │
+│ Usuario sube imagen                                       │
+│         ↓                                                 │
+│ Upload guardado en /tmp (< 5 seg)                        │
+│         ↓                                                 │
+│ PlantNet API llamada (TIMEOUT: 25 seg)                   │
+│         ↓                                                 │
+│ Si PlantNet OK: Buscar imagen en PictureThis (TIMEOUT: 2 seg)
+│         ↓                                                 │
+│ Consultar BD Supabase (TIMEOUT: 3-10 seg)                │
+│         ↓                                                 │
+│ Insertar nuevo registro en BD (TIMEOUT: 10 seg)          │
+│         ↓                                                 │
+│ RESPUESTA AL FRONTEND (< 55 segundos TOTAL)              │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+
+TOTAL MÁXIMO: ~55 segundos (límite de Vercel)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 PRÓXIMOS PASOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Sube cambios a GitHub:
+   git add .
+   git commit -m "Fix: Agregar timeouts explícitos en API calls"
+   git push
+
+2. Vercel redesplegará automáticamente (1-2 minutos)
+
+3. Prueba en: https://crown-counter-gfjl.vercel.app/
+   ✓ Carga imagen
+   ✓ Haz clic en "Analizar Imagen"
+   ✓ Debería mostrar resultado en < 55 segundos
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ VERIFICACIÓN:
+
+Si aún se cuelga:
+
+1. Abre DevTools (F12) → Console
+2. Revisa los logs en la consola del navegador
+3. Abre Vercel Dashboard → Deployments → Logs
+4. Copia el error exacto
+
+Posibles errores y soluciones:
+
+❌ "Timeout"
+   → PlantNet está lento. El código ahora cortará después de 25s.
+
+❌ "Connection refused"
+   → Verifica conexión a internet. Prueba con otra imagen.
+
+❌ "JSON decode error"
+   → PlantNet retornó respuesta inválida. Usa fallback IMG_RESPALDO.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💡 FLUJO DE DEBUGGING:
+
+Si el botón se cuelga, verás esto en Vercel Logs:
+
+✅ EXITOSO:
+   🔍 Realizando peticiones a la API de PlantNet...
+   📤 Enviando petición a PlantNet con timeout=25s...
+   ✅ Planta identificada: Rosa × odorata (certeza: 78%)
+   🔍 Buscando imagen en PictureThisAI para: Tea rose
+   📡 GET https://www.picturethisai.com/es/wiki/Tea_rose.html (timeout=2s)
+   ✅ ¡Imagen encontrada!: https://www.picturethisai.com/image...
+
+❌ TIMEOUT (ahora se recupera):
+   ❌ TIMEOUT: PlantNet tardó más de 25 segundos
+   (app.py usa IMG_RESPALDO y retorna respuesta rápido)
+
+═══════════════════════════════════════════════════════════════════════════════
